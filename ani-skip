@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+mpv() {
+
+	res=$(curl -s $(printf "https://api.aniskip.com/v1/skip-times/%s/%s?types[]=op" $1 $2))
+	
+	status=$(printf "%s" "$res" |sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
+	[ "$status" = "true" ] && printf "%s" "$res" | \
+		sed -E 's!.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*!--script-opts=skip-\1=\2,skip-\3=\4!'
+}
+
+[ -z "$*" ] && printf "%s [MALid] [ep]\n" "${0##*/}" && exit 1
+
+mpv $1 $2
