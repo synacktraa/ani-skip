@@ -55,8 +55,8 @@ chmod 700 ani-skip
 
 ## Checklist
 
-<ul>
-    <li><input type="checkbox" disabled checked> mpv</li>
-    <li><input type="checkbox" disabled> vlc</li>
-    <li><input type="checkbox" disabled> MyAnimeList Id scraper</li>
-</ul>
+
+- [x] mpv
+- [ ] vlc
+- [ ] MyAnimeList Id scraper
+
