@@ -11,6 +11,10 @@
 
 <h1 align="center">ani-skip<h1>
 
+<p align="center">
+<img src="https://media.tenor.com/CHVEROnz6hMAAAAC/asta-black-clover.gif">
+</p>
+
 <h3 align="center">
 A script to automatically skip anime opening sequences, making it easier to watch your favorite shows without having to manually skip the intros each time.
 </h3>
@@ -22,7 +26,7 @@ A script to automatically skip anime opening sequences, making it easier to watc
 
 ```sh
 $ ./ani-skip
-ani-skip [MALid] [ep]
+ani-skip ["title"] [ep]
 # MALid -> Anime's MyAnimeList Id
 # ep -> episode number 
 ```
@@ -30,10 +34,9 @@ ani-skip [MALid] [ep]
 *In addition to using it as a standalone script, you can also incorporate this script into your anime player by copying or implementing it.*
 
 ```sh
-$ ./ani-skip 49596 1
---script-opts=skip-start_time=105.492,skip-end_time=195.492
-$ ./ani-skip 49596 1 | xargs mpv --script=~/.config/mpv/scripts/skip.lua {} "bluelock-ep1.mp4"
-# 49596 -> bluelock MyAnimeList ID
+$ ./ani-skip "Black Clover (170 episode)" 10
+--script-opts=skip-start_time=140.153,skip-end_time=230.153
+$ ./ani-skip "Black Clover (170 episode)" 10 | xargs -I {} mpv --script=~/.config/mpv/scripts/skip.lua {} "black_clover_ep10.mp4"
 ```
 
 ## Install
@@ -58,5 +61,5 @@ chmod 700 ani-skip
 
 - [x] mpv
 - [ ] vlc
-- [ ] MyAnimeList Id scraper
+- [x] MyAnimeList Id scraper
 
