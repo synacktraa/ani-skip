@@ -24,12 +24,12 @@ A script to automatically skip anime opening sequences, making it easier to watc
 
 ## Usage
 
-```sh
+<pre>
 $ ./ani-skip
 ani-skip ["title"] [ep]
-# title -> Precise anime title that can be retrieved during anime selection (e.g. ani-cli anime selection)
+# title -> Precise anime title that can be retrieved during anime selection (e.g. <a href="https://github.com/pystardust/ani-cli">ani-cli</a> anime selection)
 # ep -> episode number 
-```
+</pre>
 
 *In addition to using it as a standalone script, you can also incorporate this script into your anime player by copying or implementing it.*
 
