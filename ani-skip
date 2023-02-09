@@ -1,15 +1,27 @@
 #!/bin/sh
 
+get_MAL_Id() {
 
-mpv() {
+        name=$(printf "%s" "$*"| sed -E "s!(.+\b)( \().*!\1!")
+        key=$(printf "%s" "$name"| sed -E 's| |%20|g')
+        json=$(curl -s $(printf "https://myanimelist.net/search/prefix.json?type=anime&keyword=%s" "$key"))
+        MAL_ID=$(printf "%s\n" "$json" | grep -Eo '"id"[^}]+'| sed -E 's!"id":([0-9]{1,}),.+name":"([^"]+).+!\2|\1!g'|\
+                 grep -Eo "^$(printf "%s" "$name")\|.*" | sed -E "s!.+\|(.+)!\1!")
 
-	res=$(curl -s $(printf "https://api.aniskip.com/v1/skip-times/%s/%s?types[]=op" $1 $2))
-	
-	status=$(printf "%s" "$res" |sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
-	[ "$status" = "true" ] && printf "%s" "$res" | \
-		sed -E 's!.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*!--script-opts=skip-\1=\2,skip-\3=\4!'
 }
 
-[ -z "$*" ] && printf "%s [MALid] [ep]\n" "${0##*/}" && exit 1
+genopts() {
 
-mpv $1 $2
+        res=$(curl -s $(printf "https://api.aniskip.com/v1/skip-times/%s/%s?types[]=op" $MAL_ID $1))
+        status=$(printf "%s" "$res" |sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
+        [ "$status" = "true" ] && printf "%s" "$res" | \
+                sed -E 's!.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*!--script-opts=skip-\1=\2,skip-\3=\4!'
+}
+
+[ -z "$*" ] && printf "%s [name] [ep]\n" "${0##*/}" && exit 1
+
+title="$1"
+ep_no="$2"
+
+get_MAL_Id "$title"
+genopts $ep_no 
