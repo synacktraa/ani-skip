@@ -18,7 +18,7 @@ genopts() {
                 sed -E 's!.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*!--script-opts=skip-\1=\2,skip-\3=\4!'
 }
 
-[ -z "$*" ] && printf "%s [name] [ep]\n" "${0##*/}" && exit 1
+[ -z "$*" ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 1
 
 title="$1"
 ep_no="$2"
