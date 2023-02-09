@@ -27,7 +27,7 @@ A script to automatically skip anime opening sequences, making it easier to watc
 ```sh
 $ ./ani-skip
 ani-skip ["title"] [ep]
-# MALid -> Anime's MyAnimeList Id
+# title -> Precise anime title that can be retrieved during anime selection (e.g. ani-cli anime selection)
 # ep -> episode number 
 ```
 
