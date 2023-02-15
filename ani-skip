@@ -6,7 +6,7 @@ get_MAL_Id() {
         key=$(printf "%s" "$name"| sed -E 's| |%20|g')
         json=$(curl -s $(printf "https://myanimelist.net/search/prefix.json?type=anime&keyword=%s" "$key"))
         MAL_ID=$(printf "%s\n" "$json" | grep -Eo '"id"[^}]+'| sed -E 's!"id":([0-9]{1,}),.+name":"([^"]+).+!\2|\1!g'|\
-                 grep -Eo "^$(printf "%s" "$name")\|.*" | sed -E "s!.+\|(.+)!\1!")
+                 grep -Eo "^$name\|.*" | sed -E "s!.+\|(.+)!\1!")
 
 }
 
@@ -25,3 +25,4 @@ ep_no="$2"
 
 get_MAL_Id "$title"
 genopts $ep_no 
+
