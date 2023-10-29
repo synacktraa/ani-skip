@@ -1,6 +1,9 @@
 #!/bin/sh
 
 get_skip_times() {
+        lua_script="$HOME/.config/mpv/scripts/skip.lua"
+        [ ! -f "$lua_script" ] && printf "\033[1;31m'skip.lua' script not found!\033[0m\n" 1>&2 && return 1
+        
         name=$(printf "%s" "$title" | sed -E "s@(.+\b)( \().*@\1@")
         keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
         mal_output=$(curl -s "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
@@ -12,7 +15,7 @@ get_skip_times() {
         [ "$found_status" = "false" ] && printf "\033[1;31mSkip times not found!\033[0m\n" 1>&2 && return 1
 
         opts_flag=$(printf "%s" "$aniskip_output" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@--script-opts=skip-\1=\2,skip-\3=\4@')
-        skip_flag="$opts_flag --script=~/.config/mpv/scripts/skip.lua"
+        skip_flag="$opts_flag --script=$lua_script"
 }
 
 [ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 1
