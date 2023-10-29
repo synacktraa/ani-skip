@@ -35,16 +35,17 @@ ani-skip ["title"] [ep]
 
 ```sh
 $ ./ani-skip "Black Clover (170 episode)" 10
---script-opts=skip-start_time=140.153,skip-end_time=230.153 --script=~/.config/mpv/scripts/skip.lua"
+--script-opts=skip-start_time=140.153,skip-end_time=230.153 --script=~/.config/mpv/scripts/skip.lua
 $ ./ani-skip "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover_ep10.mp4"
 ```
 
 ## Install
 
 ```sh
-git clone https://github.com/synacktraa/ani-skip.git && cd ./ani-skip
-mkdir ~/.config/mpv/scripts && cp skip.lua ~/.config/mpv/scripts/
-chmod 700 ani-skip
+git clone https://github.com/synacktraa/ani-skip.git
+sudo cp ani-skip/ani-skip /usr/local/bin
+mkdir -p ~/.config/mpv/scripts && cp ani-skip/skip.lua ~/.config/mpv/scripts/
+rm -rf ani-skip
 ```
 *Note:  `skip.lua` script can be used with any video by simply providing it with the `start_time` and `end_time` of the desired section to be skipped.*
 
