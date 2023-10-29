@@ -35,7 +35,7 @@ ani-skip ["title"] [ep]
 
 ```sh
 $ ./ani-skip "Black Clover (170 episode)" 10
---script-opts=skip-start_time=140.153,skip-end_time=230.153
+--script-opts=skip-start_time=140.153,skip-end_time=230.153 --script=~/.config/mpv/scripts/skip.lua"
 $ ./ani-skip "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover_ep10.mp4"
 ```
 
