@@ -1,5 +1,7 @@
 #!/bin/sh
 
+agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
+
 die() {
     printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
     exit 1
@@ -26,11 +28,11 @@ get_skip_times() {
         
         name=$(printf "%s" "$title" | sed -E "s@(.+\b)( \().*@\1@")
         keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
-        mal_output=$(curl -s "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
+        mal_output=$(curl -s -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
         mal_id=$(printf "%s\n" "$mal_output" | grep -Eo '"id"[^}]+'| sed -E 's@"id":([0-9]{1,}),.+name":"([^"]+).+@\2|\1@g'| grep -Eo "^$name\|.*" | sed -E "s@.+\|(.+)@\1@")
         [ -z "$mal_id" ] && die "MyAnimeList ID not found!"
 
-        aniskip_output=$(curl -s "https://api.aniskip.com/v1/skip-times/$mal_id/$ep_no?types[]=op")
+        aniskip_output=$(curl -s -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$ep_no?types[]=op")
         found_status=$(printf "%s" "$aniskip_output" | sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
         [ "$found_status" = "false" ] && printf "Skip times not found!"
 
