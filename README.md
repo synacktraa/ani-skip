@@ -25,18 +25,26 @@ A script to automatically skip anime opening sequences, making it easier to watc
 ## Usage
 
 <pre>
-$ ./ani-skip
+$ ani-skip
 ani-skip ["title"] [ep]
 # title -> Precise anime title that can be retrieved during anime selection (e.g. <a href="https://github.com/pystardust/ani-cli">ani-cli</a> anime selection)
 # ep -> episode number 
+'
 </pre>
 
 *In addition to using it as a standalone script, you can also incorporate this script into your anime player by copying or implementing it.*
 
 ```sh
-$ ./ani-skip "Black Clover (170 episode)" 10
+$ ani-skip "Black Clover (170 episode)" 10
 --script-opts=skip-start_time=140.153,skip-end_time=230.153 --script=~/.config/mpv/scripts/skip.lua
-$ ./ani-skip "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover_ep10.mp4"
+$ ani-skip "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover_ep10.mp4"
+```
+> `ani-skip-jq` script utilizes `jq` to parse `myanimelist.net` and `api.aniskip.com` json output, make sure it's installed before running it.
+
+```sh
+$ ani-skip-jq "Black Clover (170 episode)" 10
+--script-opts=skip-start_time=140.153,skip-end_time=230.153 --script=~/.config/mpv/scripts/skip.lua
+$ ani-skip-jq "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover_ep10.mp4"
 ```
 
 ## Install
@@ -56,6 +64,7 @@ rm -rf ani-skip
 - curl
 - lua
 - mpv - Video Player
+- jq (Optional)
 
 ## Checklist
 
