@@ -51,7 +51,8 @@ $ ani-skip-jq "Black Clover (170 episode)" 10 | xargs -I {} mpv {} "black_clover
 
 ```sh
 git clone https://github.com/synacktraa/ani-skip.git
-sudo cp ani-skip/ani-skip /usr/local/bin
+chmod 700 ani-skip/ani-skip
+sudo mv ani-skip/ani-skip /usr/local/bin
 mkdir -p ~/.config/mpv/scripts && cp ani-skip/skip.lua ~/.config/mpv/scripts/
 rm -rf ani-skip
 ```

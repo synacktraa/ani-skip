@@ -14,8 +14,8 @@ get_skip_times() {
         found_status=$(printf "%s" "$aniskip_output" | sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
         [ "$found_status" = "false" ] && printf "\033[1;31mSkip times not found!\033[0m\n" 1>&2 && return 1
 
-        opts_flag=$(printf "%s" "$aniskip_output" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@--script-opts=skip-\1=\2,skip-\3=\4@')
-        skip_flag="$opts_flag --script=$lua_script"
+        options=$(printf "%s" "$aniskip_output" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@skip-\1=\2,skip-\3=\4@')
+        skip_flag="--script-opts=$options --script=$lua_script"
 }
 
 [ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 1

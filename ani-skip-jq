@@ -15,8 +15,8 @@ get_skip_times() {
         
         start_time=$(echo $aniskip_output | jq .results[].interval.start_time)
         end_time=$(echo $aniskip_output | jq .results[].interval.end_time)
-        opts_flag="--script-opts=skip-start_time=$start_time,skip-end_time=$end_time"
-        skip_flag="$opts_flag --script=$lua_script"
+        options="skip-start_time=$start_time,skip-end_time=$end_time"
+        skip_flag="--script-opts=$options --script=$lua_script"
 }
 [ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 1
 
