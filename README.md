@@ -29,8 +29,13 @@ $ ani-skip
 ani-skip ["title"] [ep]
 # title -> Precise anime title that can be retrieved during anime selection (e.g. <a href="https://github.com/pystardust/ani-cli">ani-cli</a> anime selection)
 # ep -> episode number 
-'
 </pre>
+
+> To update the script use `-U` flag
+
+```sh
+ani-skip -U
+```
 
 *In addition to using it as a standalone script, you can also incorporate this script into your anime player by copying or implementing it.*
 

@@ -1,5 +1,25 @@
 #!/bin/sh
 
+die() {
+    printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
+    exit 1
+}
+
+update_script() {
+    update="$(curl -s -A "$agent" "https://raw.githubusercontent.com/synacktraa/ani-skip/master/ani-skip")" || die "Connection error"
+    update="$(printf '%s\n' "$update" | diff -u "$0" -)"
+    if [ -z "$update" ]; then
+        printf "Script is up to date :)\n"
+    else
+        if printf '%s\n' "$update" | patch "$0" -; then
+            printf "Script has been updated\n"
+        else
+            die "Can't update for some reason!"
+        fi
+    fi
+    exit 0
+}
+
 get_skip_times() {
         lua_script="$HOME/.config/mpv/scripts/skip.lua"
         [ ! -f "$lua_script" ] && printf "\033[1;31m'skip.lua' script not found!\033[0m\n" 1>&2 && return 1
@@ -18,7 +38,9 @@ get_skip_times() {
         options="skip-start_time=$start_time,skip-end_time=$end_time"
         skip_flag="--script-opts=$options --script=$lua_script"
 }
-[ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 1
+
+[ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
+[ "$#" -ne 2 ] && die "${0##*/} [\"title\"] [ep]"
 
 title="$1" ep_no="$2" get_skip_times
 printf "%s" "$skip_flag"
