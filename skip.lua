@@ -25,4 +25,3 @@ end
 
 -- run skip() function when this script is loaded with mpv
 mpv.register_event("file-loaded", skip)
-
