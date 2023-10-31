@@ -22,21 +22,30 @@ update_script() {
     fi
 }
 
+build_options(){
+    greppable='"start_time":([0-9.]+),"end_time":([0-9.]+)},"skip_type":"('$1')"'
+    unformatted=$(printf "%s" "$2" | grep -Eo $greppable)
+    printf "%s" "$unformatted" | sed -E 's@'$greppable'@skip-\3_start=\1,skip-\3_end=\2@'
+}
+
 get_skip_times() {
         [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
-        
+
         name=$(printf "%s" "$1" | sed -E "s@(.+\b)( \().*@\1@")
         keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
         mal_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
         mal_id=$(printf "%s\n" "$mal_metadata" | grep -Eo '"id"[^}]+'| sed -E 's@"id":([0-9]{1,}),.+name":"([^"]+).+@\2|\1@g'| grep -Eo "^$name\|.*" | sed -E "s@.+\|(.+)@\1@")
         [ -z "$mal_id" ] && die "MyAnimeList ID not found!"
 
-        ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$2?types=op")
-        found_status=$(printf "%s" "$ani_skip_metadata" | sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
+        ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$2?types=op&types=ed")
+        found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
         [ "$found_status" = "false" ] && die "Skip times not found!"
 
-        options=$(printf "%s" "$ani_skip_metadata" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@skip-\1=\2,skip-\3=\4@')
-        skip_flag="--script-opts=$options '--script=$lua_script'"
+        op_options=$(build_options "op" "$ani_skip_metadata")
+        ed_options=$(build_options "ed" "$ani_skip_metadata")
+        [ ! -z "$op_options" ] && [ ! -z "$ed_options" ] && op_options="$op_options,"
+
+        skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
 }
 
 if [ "$#" -eq 1 ] && [ "$1" = "-U" ]; then
