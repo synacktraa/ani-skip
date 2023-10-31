@@ -1,27 +1,25 @@
 -- Importing mpv module
 local mpv = require('mp')
-local opts = require("mp.options")
+local mpv_options = require("mp.options")
 
 local options = { -- setting default options
 	start_time = 0,
 	end_time = 0,
 }
-opts.read_options(options, "skip") --reading script-opts data
+mpv_options.read_options(options, "skip") --reading script-opts data
 
-function skip() -- function to skip from a specified start_time
-				-- to specified end_time
+-- Main function to check and skip if within the defined section
+local function skip()
+    local current_time = mp.get_property_number("time-pos")
+    
+    if not current_time then
+		    return
+    end
 
-	-- get current time of the video
-	time_pos = mpv.get_property_number("time-pos") 
-	repeat 
-		-- repeat until time-pos is greater than specified start_time
-		time_pos = mpv.get_property_number("time-pos")
-	until( options.start_time < time_pos )
-
-	--set player time to specified end_time when time-pos == start_time 
-	mpv.set_property_number("time-pos", options.end_time-1)
-		
+    if current_time >= options.start_time and current_time < options.end_time then
+        mp.set_property_number("time-pos", options.end_time)
+    end
 end
 
--- run skip() function when this script is loaded with mpv
-mpv.register_event("file-loaded", skip)
+-- Bind the function to be called whenever the time position is changed
+mp.observe_property("time-pos", "number", skip)

@@ -1,6 +1,7 @@
 #!/bin/sh
 
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
+lua_script="$HOME/.config/mpv/scripts/skip.lua"
 
 die() {
     printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
@@ -8,40 +9,44 @@ die() {
 }
 
 update_script() {
-    update="$(curl -s -A "$agent" "https://raw.githubusercontent.com/synacktraa/ani-skip/master/ani-skip")" || die "Connection error"
-    update="$(printf '%s\n' "$update" | diff -u "$0" -)"
+    update="$(curl -s -A "$agent" "https://raw.githubusercontent.com/synacktraa/ani-skip/master/$1")" || die "Connection error"
+    update="$(printf '%s\n' "$update" | diff -u "$2" -)"
     if [ -z "$update" ]; then
         printf "Script is up to date :)\n"
     else
-        if printf '%s\n' "$update" | patch "$0" -; then
+        if printf '%s\n' "$update" | patch "$2" -; then
             printf "Script has been updated\n"
         else
             die "Can't update for some reason!"
         fi
     fi
-    exit 0
 }
 
 get_skip_times() {
-        lua_script="$HOME/.config/mpv/scripts/skip.lua"
         [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
         
-        name=$(printf "%s" "$title" | sed -E "s@(.+\b)( \().*@\1@")
+        name=$(printf "%s" "$1" | sed -E "s@(.+\b)( \().*@\1@")
         keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
-        mal_output=$(curl -s -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
-        mal_id=$(printf "%s\n" "$mal_output" | grep -Eo '"id"[^}]+'| sed -E 's@"id":([0-9]{1,}),.+name":"([^"]+).+@\2|\1@g'| grep -Eo "^$name\|.*" | sed -E "s@.+\|(.+)@\1@")
+        mal_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
+        mal_id=$(printf "%s\n" "$mal_metadata" | grep -Eo '"id"[^}]+'| sed -E 's@"id":([0-9]{1,}),.+name":"([^"]+).+@\2|\1@g'| grep -Eo "^$name\|.*" | sed -E "s@.+\|(.+)@\1@")
         [ -z "$mal_id" ] && die "MyAnimeList ID not found!"
 
-        aniskip_output=$(curl -s -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$ep_no?types[]=op")
-        found_status=$(printf "%s" "$aniskip_output" | sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
-        [ "$found_status" = "false" ] && printf "Skip times not found!"
+        ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$2?types=op")
+        found_status=$(printf "%s" "$ani_skip_metadata" | sed -E 's_\{"found":(true|false),.*_\1_p' | head -n1)
+        [ "$found_status" = "false" ] && die "Skip times not found!"
 
-        options=$(printf "%s" "$aniskip_output" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@skip-\1=\2,skip-\3=\4@')
-        skip_flag="--script-opts=$options --script=$lua_script"
+        options=$(printf "%s" "$ani_skip_metadata" | sed -E 's@.*"([a-z_]+)":([0-9.]+),"([a-z_]+)":([0-9.]+).*:"op".*@skip-\1=\2,skip-\3=\4@')
+        skip_flag="--script-opts=$options '--script=$lua_script'"
 }
 
-[ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
-[ "$#" -ne 2 ] && die "${0##*/} [\"title\"] [ep]"
+if [ "$#" -eq 1 ] && [ "$1" = "-U" ]; then
+    update_script "ani-skip" "$0"
+    update_script "skip.lua" "$lua_script"
+    exit 0
+elif [ "$#" -ne 2 ]; then
+    printf "%s [\"title\"] [ep]\n" "${0##*/}"
+    exit 0
+fi
 
-title="$1" ep_no="$2" get_skip_times
-printf "%s" "$skip_flag"
+get_skip_times "$1" "$2"
+printf '%s' "$skip_flag"
