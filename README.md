@@ -15,7 +15,7 @@
 </p>
 
 <h3 align="center">
-A script to automatically skip anime opening and ending sequences, making it easier to watch your favorite shows without having to manually skip the intros each time.
+A script to automatically skip anime opening and ending sequences, making it easier to watch your favorite shows without having to manually skip the intros and outros each time.
 </h3>
 
 **Important:** There's a chance `ani-skip` may not recognize the anime you're watching. It leverages the [aniskip API](https://api.aniskip.com/api-docs). If an anime's episode(s) are missing, you can contribute or request its inclusion on their [discord server](https://discord.com/invite/UqT55CbrbE).
