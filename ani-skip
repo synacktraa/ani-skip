@@ -9,17 +9,18 @@ die() {
 }
 
 update_script() {
-    update="$(curl -s -A "$agent" "https://raw.githubusercontent.com/synacktraa/ani-skip/master/$1")" || die "Connection error"
-    update="$(printf '%s\n' "$update" | diff -u "$2" -)"
+    update="$(curl -s -A "$agent" "https://raw.githubusercontent.com/synacktraa/ani-skip/master/ani-skip")" || die "Connection error"
+    update="$(printf '%s\n' "$update" | diff -u "$0" -)"
     if [ -z "$update" ]; then
         printf "Script is up to date :)\n"
     else
-        if printf '%s\n' "$update" | patch "$2" -; then
+        if printf '%s\n' "$update" | patch "$0" -; then
             printf "Script has been updated\n"
         else
             die "Can't update for some reason!"
         fi
     fi
+    exit 0
 }
 
 build_options(){
@@ -48,14 +49,8 @@ get_skip_times() {
         skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
 }
 
-if [ "$#" -eq 1 ] && [ "$1" = "-U" ]; then
-    update_script "ani-skip" "$0"
-    update_script "skip.lua" "$lua_script"
-    exit 0
-elif [ "$#" -ne 2 ]; then
-    printf "%s [\"title\"] [ep]\n" "${0##*/}"
-    exit 0
-fi
+[ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
+[ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 0
 
 get_skip_times "$1" "$2"
 printf '%s' "$skip_flag"
