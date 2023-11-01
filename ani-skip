@@ -23,34 +23,54 @@ update_script() {
     exit 0
 }
 
-build_options(){
+build_options() {
+    #shellcheck disable=SC2016
+    : '
+    `build_options` builds options for `--script-opts` flag from aniskip metadata
+    :param $1: skip type (for e.g.: op, ed, recap)
+    :param $2: AniSkip metadata
+    '
     greppable='"start_time":([0-9.]+),"end_time":([0-9.]+)},"skip_type":"('$1')"'
-    unformatted=$(printf "%s" "$2" | grep -Eo $greppable)
-    printf "%s" "$unformatted" | sed -E 's@'$greppable'@skip-\3_start=\1,skip-\3_end=\2@'
+    unformatted=$(printf "%s" "$2" | grep -Eo "$greppable")
+    printf "%s" "$unformatted" | sed -E 's@'"$greppable"'@skip-\3_start=\1,skip-\3_end=\2@'
 }
 
-get_skip_times() {
-        [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
+fetch_mal_id() {
+    #shellcheck disable=SC2016
+    : '
+    `fetch_mal_id` fetches MyAnimeList Identifier of particular anime
+    :param $1: name of the anime
+    '
+    name=$(printf "%s" "$1" | sed 's@ (\([0-9]*\) episodes)@@')
+    keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
+    filter_key=$(printf "%s" "$name" | tr -cd '\000-\177')
+    mal_metadata=$(curl -s --connect-timeout 5 "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
+    relevant_name=$(printf "%s" "$mal_metadata" | grep -Eio '"name":"[^"]+' | cut -d '"' -f4 | fzf -i --filter="$filter_key" | head -1 | sed 's/\\u/\\\\u/g' | sed -E 's@\\?[ :/]@_@g')
+    printf "%s" "$mal_metadata" | grep -Eo '"url":"[^0-9]+[0-9]+\\/'"$relevant_name"'"' | sed -E 's@[^0-9]+([0-9]+).*@\1@'
+}
 
-        name=$(printf "%s" "$1" | sed -E "s@(.+\b)( \().*@\1@")
-        keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
-        mal_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
-        mal_id=$(printf "%s\n" "$mal_metadata" | grep -Eo '"id"[^}]+'| sed -E 's@"id":([0-9]{1,}),.+name":"([^"]+).+@\2|\1@g'| grep -Eo "^$name\|.*" | sed -E "s@.+\|(.+)@\1@")
-        [ -z "$mal_id" ] && die "MyAnimeList ID not found!"
+build_flags() {
+    #shellcheck disable=SC2016
+    : '
+    `build_flags` builds `--script-opts` and `--script` flags for MPV player
+    :param $1: MyAnimeList Identifier
+    :param $2: Episode number
+    '
+    [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
 
-        ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$mal_id/$2?types=op&types=ed")
-        found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
-        [ "$found_status" = "false" ] && die "Skip times not found!"
+    ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed")
+    found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
+    [ "$found_status" = "false" ] && die "Skip times not found!"
 
-        op_options=$(build_options "op" "$ani_skip_metadata")
-        ed_options=$(build_options "ed" "$ani_skip_metadata")
-        [ ! -z "$op_options" ] && [ ! -z "$ed_options" ] && op_options="$op_options,"
+    op_options=$(build_options "op" "$ani_skip_metadata")
+    ed_options=$(build_options "ed" "$ani_skip_metadata")
+    [ -n "$op_options" ] && [ -n "$ed_options" ] && op_options="$op_options,"
 
-        skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
+    skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
 }
 
 [ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
 [ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 0
 
-get_skip_times "$1" "$2"
+build_flags "$(fetch_mal_id "$1")" "$2"
 printf '%s' "$skip_flag"

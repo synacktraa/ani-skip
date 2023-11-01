@@ -69,6 +69,7 @@ rm -rf ani-skip
 - grep
 - sed
 - curl
+- fzf
 - lua
 - mpv - Video Player
 
