@@ -42,7 +42,7 @@ fetch_mal_id() {
     :param $1: name of the anime
     '
     name=$(printf "%s" "$*" | sed 's| (\([0-9]*\) episodes)||')
-    keyword=$(printf "%s" "$name" | tr -d '[:punct:]' | sed -E 's| |%20|g')
+    keyword=$(printf "%s" "$name" | tr -c '[:alnum:]' ' ' | sed -E 's| |%20|g')
     mal_metadata=$(curl -sL "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword" | tr -d "\\" 2>/dev/null)
     name=$(printf "%s\n" "$name" | tr -cs '[:print:]' ' ' | tr -c '[:alnum:]' ' ')
     fzf_nth=$(printf "%s," $(seq 1 "$(printf "%s" "$name" | wc -w)") | sed 's|,$||')
