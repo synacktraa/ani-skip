@@ -49,6 +49,7 @@ fetch_mal_id() {
     results=$(printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | sed 's|.*,"name":"||g ; s|","url":".*||g')
     relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" --nth="$fzf_nth" | head -n1)
     [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" | head -n1)
+    [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | head -n1)
     printf "%s\n" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p'
 }
 
