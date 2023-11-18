@@ -41,12 +41,16 @@ fetch_mal_id() {
     `fetch_mal_id` fetches MyAnimeList Identifier of particular anime
     :param $1: name of the anime
     '
-    name=$(printf "%s" "$1" | sed 's@ (\([0-9]*\) episodes)@@')
-    keyword=$(printf "%s" "$name" | sed -E 's| |%20|g')
-    filter_key=$(printf "%s" "$name" | tr -cd '\000-\177')
-    mal_metadata=$(curl -s --connect-timeout 5 "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword")
-    relevant_name=$(printf "%s" "$mal_metadata" | grep -Eio '"name":"[^"]+' | cut -d '"' -f4 | fzf -i --filter="$filter_key" | head -1 | sed 's/\\u/\\\\u/g' | sed -E 's@\\?[ :/]@_@g')
-    printf "%s" "$mal_metadata" | grep -Eo '"url":"[^0-9]+[0-9]+\\/'"$relevant_name"'"' | sed -E 's@[^0-9]+([0-9]+).*@\1@'
+    name=$(printf "%s" "$*" | sed 's| (\([0-9]*\) episodes)||')
+    keyword=$(printf "%s" "$name" | tr -c '[:alnum:]' ' ' | sed -E 's| |%20|g')
+    mal_metadata=$(curl -sL "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword" | tr -d "\\" 2>/dev/null)
+    name=$(printf "%s\n" "$name" | tr -cs '[:print:]' ' ' | tr -c '[:alnum:]' ' ')
+    fzf_nth=$(printf "%s," $(seq 1 "$(printf "%s" "$name" | wc -w)") | sed 's|,$||')
+    results=$(printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | sed 's|.*,"name":"||g ; s|","url":".*||g')
+    relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" --nth="$fzf_nth" | head -n1)
+    [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" | head -n1)
+    [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | head -n1)
+    printf "%s\n" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p'
 }
 
 build_flags() {
