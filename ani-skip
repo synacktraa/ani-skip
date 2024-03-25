@@ -1,7 +1,11 @@
 #!/bin/sh
 
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
-lua_script="$HOME/.config/mpv/scripts/skip.lua"
+if [[ "$OS" == *"Windows"* ]]; then
+    lua_script="$APPDATA\mpv\scripts/skip.lua"
+else
+    lua_script="$HOME/.config/mpv/scripts/skip.lua"
+fi
 
 die() {
     printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
@@ -62,16 +66,37 @@ build_flags() {
     '
     [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
 
-    ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed")
-    found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
-    [ "$found_status" = "false" ] && die "Skip times not found!"
+    if [[ "$OS" == *"Windows"* ]]; then
 
-    op_options=$(build_options "op" "$ani_skip_metadata")
-    ed_options=$(build_options "ed" "$ani_skip_metadata")
+        # Fetch data for op
+        ani_skip_metadata_op=$(wget -qO- --connect-timeout=5 --no-check-certificate --user-agent="$agent" "$api_url"op 2>&1)
+        found_status_op=$(printf "%s" "$ani_skip_metadata_op" | sed -n 's/.*"found":([^,]*).*/1/p')
+        [ "$found_status_op" = "false" ] && op_found=false
+        op_options=$(build_options "op" "$ani_skip_metadata_op")
+
+        # Fetch data for ed
+        ani_skip_metadata_ed=$(wget -qO- --connect-timeout=5 --no-check-certificate --user-agent="$agent" "$api_url"ed 2>&1)
+        found_status_ed=$(printf "%s" "$ani_skip_metadata_ed" | sed -n 's/.*"found":([^,]*).*/1/p')
+        [ "$found_status_ed" = "false" ] && ed_found=false
+        ed_options=$(build_options "ed" "$ani_skip_metadata_ed")
+
+        # Check if both op and ed are not found
+        if [ "$op_found" = false ] && [ "$ed_found" = false ]; then
+            die "Skip times not found for both OP and ED!"
+        fi
+    else
+        ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed")
+        found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":([^,]*).*/1/p')
+        [ "$found_status" = "false" ] && die "Skip times not found!"
+
+        op_options=$(build_options "op" "$ani_skip_metadata")
+        ed_options=$(build_options "ed" "$ani_skip_metadata")
+    fi
     [ -n "$op_options" ] && [ -n "$ed_options" ] && op_options="$op_options,"
-
     skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
 }
+
+
 
 [ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
 [ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 0
