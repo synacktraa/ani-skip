@@ -1,7 +1,7 @@
 #!/bin/sh
 
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
-if [[ "$OS" == *"Windows"* ]]; then
+if [[ "$OSTYPE" == msys* ]]; then
     lua_script="$APPDATA\mpv\scripts/skip.lua"
 else
     lua_script="$HOME/.config/mpv/scripts/skip.lua"
@@ -67,7 +67,7 @@ build_flags() {
     [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
 
     if [[ "$OS" == *"Windows"* ]]; then
-
+        api_url="https://api.aniskip.com/v1/skip-times/$1/$2?types="
         # Fetch data for op
         ani_skip_metadata_op=$(wget -qO- --connect-timeout=5 --no-check-certificate --user-agent="$agent" "$api_url"op 2>&1)
         found_status_op=$(printf "%s" "$ani_skip_metadata_op" | sed -n 's/.*"found":([^,]*).*/1/p')
@@ -82,7 +82,7 @@ build_flags() {
 
         # Check if both op and ed are not found
         if [ "$op_found" = false ] && [ "$ed_found" = false ]; then
-            die "Skip times not found for both OP and ED!"
+            die "Skip times not found!"
         fi
     else
         ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed")
