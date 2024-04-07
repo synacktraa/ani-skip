@@ -4,7 +4,6 @@
 <img src="https://img.shields.io/badge/os-linux-darkorange">
 <img src="https://img.shields.io/badge/os-mac-darkorange">
 <img src="https://img.shields.io/badge/os-windows-darkorange">
-<img src="https://img.shields.io/badge/os-android-darkorange">
 <br>
 </p>
 
@@ -24,7 +23,7 @@ A script to automatically skip anime opening and ending sequences, making it eas
 
 Should you run into problems, first ensure you're using the most recent version:
 
-- For Linux, Mac, and Android:
+- For Linux and Mac:
   ```bash
   sudo ani-skip -U
   ```
