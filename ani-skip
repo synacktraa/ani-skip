@@ -103,6 +103,7 @@ build_flags() {
 }
 
 
+[ $# -eq 0 ] && help_info
 while [ $# -gt 0 ]; do
     [ "$OSTYPE" = msys* ] && flag=${1//[![:print:]]/} || flag="$1"
     case "$flag" in
