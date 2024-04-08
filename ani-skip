@@ -1,11 +1,38 @@
 #!/bin/sh
 
+
+version_number="1.0.0"
+
+lua_script="$HOME/.config/ani-skip/skip.lua"
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
-lua_script="$HOME/.config/mpv/scripts/skip.lua"
 
 die() {
     printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
     exit 1
+}
+
+help_info() {
+    printf "
+    Usage:
+    %s [OPTIONS]
+
+    Options:
+      -q, --query
+        Anime Title or MyAnimeList ID
+      -e, --episode
+        Specify the episode number
+      -V, --version
+        Show the version of the script
+      -h, --help
+        Show this help message and exit
+      -U, --update
+        Update the script
+    Some example usages:
+      %s -q \"Solo Leveling\" # Returns MyAnimeList ID
+      %s -q \"Solo Leveling\" -e 3 # Returns MPV skip flag
+      %s -q 52299 -e 5 # Returns MPV skip flag
+    \n" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" 
+    exit 0
 }
 
 update_script() {
@@ -39,18 +66,18 @@ fetch_mal_id() {
     #shellcheck disable=SC2016
     : '
     `fetch_mal_id` fetches MyAnimeList Identifier of particular anime
-    :param $1: name of the anime
+    :param $1: title of the anime
     '
     name=$(printf "%s" "$*" | sed 's| (\([0-9]*\) episodes)||')
     keyword=$(printf "%s" "$name" | tr -c '[:alnum:]' ' ' | sed -E 's| |%20|g')
-    mal_metadata=$(curl -sL "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword" | tr -d "\\" 2>/dev/null)
+    mal_metadata=$(curl -sL -A "$agent" "https://myanimelist.net/search/prefix.json?type=anime&keyword=$keyword" | tr -d "\\" 2>/dev/null)
     name=$(printf "%s\n" "$name" | tr -cs '[:print:]' ' ' | tr -c '[:alnum:]' ' ')
     fzf_nth=$(printf "%s," $(seq 1 "$(printf "%s" "$name" | wc -w)") | sed 's|,$||')
     results=$(printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | sed 's|.*,"name":"||g ; s|","url":".*||g')
     relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" --nth="$fzf_nth" | head -n1)
     [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" | head -n1)
     [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | head -n1)
-    printf "%s\n" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p'
+    mal_id=$(printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p')
 }
 
 build_flags() {
@@ -62,19 +89,47 @@ build_flags() {
     '
     [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
 
-    ani_skip_metadata=$(curl -s --connect-timeout 5 -A "$agent" "https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed")
-    found_status=$(printf "%s" "$ani_skip_metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
-    [ "$found_status" = "false" ] && die "Skip times not found!"
+    aniskip_api="https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed"
+    metadata=$(curl -s --connect-timeout 5 -A "$agent" "$aniskip_api")
+    
+    found_status=$(printf "%s" "$metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
+    [ "$found_status" != "true" ] && die "Skip times not found!"
 
-    op_options=$(build_options "op" "$ani_skip_metadata")
-    ed_options=$(build_options "ed" "$ani_skip_metadata")
+    op_options=$(build_options "op" "$metadata")
+    ed_options=$(build_options "ed" "$metadata")
     [ -n "$op_options" ] && [ -n "$ed_options" ] && op_options="$op_options,"
 
     skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
 }
 
-[ "$#" -eq 1 ] && [ "$1" = "-U" ] && update_script
-[ "$#" -ne 2 ] && printf "%s [\"title\"] [ep]\n" "${0##*/}" && exit 0
 
-build_flags "$(fetch_mal_id "$1")" "$2"
-printf '%s' "$skip_flag"
+while [ $# -gt 0 ]; do
+    [ "$OSTYPE" = msys* ] && flag=${1//[![:print:]]/} || flag="$1"
+    case "$flag" in
+        -U | --update) update_script ;;
+        -V | --version) printf "%s\n" "$version_number" && exit 0 ;;
+        -h | --help) help_info ;;
+        -q | --query)
+            [ $# -lt 2 ] && die "missing anime title/MyAnimeList ID!"
+            case $2 in
+                ''|*[!0-9]*) fetch_mal_id $2 ;;
+                *) mal_id=$2 ;;
+            esac
+            shift
+            ;;
+        -e | --episode)
+            [ $# -lt 2 ] && die "missing episode number!"
+            case $2 in
+                ''|*[!0-9]*) die "value must be a number!" ;;
+                *) episode=$2 ;;
+            esac
+    esac
+    shift
+done
+
+[ -z "$mal_id" ] && die "-q/--query is required!"
+if [ -z "$episode" ]; then
+    printf "%s" "$mal_id"
+else
+    build_flags $mal_id $episode && printf "%s" "$skip_flag"
+fi

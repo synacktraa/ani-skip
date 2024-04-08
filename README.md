@@ -37,29 +37,67 @@ Should you run into problems, first ensure you're using the most recent version:
 If the issue remains unresolved, please create a new issue.
 
 ---
+
 ## Usage
 
-<pre>
-$ ani-skip
-ani-skip ["title"] [ep]
-# title -> Precise anime title that can be retrieved during anime selection (e.g. <a href="https://github.com/pystardust/ani-cli">ani-cli</a> anime selection)
-# ep -> episode number
-</pre>
-
-> `script-opts` with the `script` flag is produced by ani-skip when metadata for a specific anime's skip times exists in the database. It's important to append these flags at the end due to certain mpv nuances.
-
 ```sh
-$ ani-skip "Black Clover (170 episode)" 10
---script-opts=skip-op_start=140.153,skip-op_end=230.153,skip-ed_start=1301.824,skip-ed_end=1431 '--script=/home/kali/.config/mpv/scripts/skip.lua'
-$ mpv "black_clover_ep10.mp4" $(ani-skip "Black Clover (170 episode)" 10)
+ani-skip -h
 ```
+```
+    Usage:
+    ani-skip [OPTIONS]
+
+    Options:
+      -q, --query
+        Anime Title or MyAnimeList ID
+      -e, --episode
+        Specify the episode number
+      -V, --version
+        Show the version of the script
+      -h, --help
+        Show this help message and exit
+      -U, --update
+        Update the script
+    Some example usages:
+      ani-skip -q "Solo Leveling" # Returns MyAnimeList ID
+      ani-skip -q "Solo Leveling" -e 3 # Returns MPV skip flag
+      ani-skip -q 52299 -e 5 # Returns MPV skip flag
+```
+
+- Build MPV skip options directly using anime's title
+  ```sh
+  ani-skip --query "Black Clover (170 episodes)" --episode 10
+  ```
+  ```
+  --script-opts=skip-op_start=140.153,skip-op_end=230.153,skip-ed_start=1301.824,skip-ed_end=1431 '--script=/home/kali/.config/mpv/scripts/skip.lua'
+  ```
+  > `script-opts` with the `script` flag is produced by ani-skip when metadata for a specific anime's skip times exists in the database. It's important to append these flags at the end due to certain mpv nuances.
+
+- Fetch `MyAnimeList` ID
+  ```sh
+  ani-skip -q "Solo Leveling"
+  ```
+  ```
+  52299
+  ```
+  > Persisting it will help building flags quickly when requesting the same anime for skip times.
+
+- Build MPV skip options directly using `MyAnimeList` ID
+  ```sh
+  ani-skip -q 52299 -e 2
+  ```
+  ```
+  --script-opts=skip-op_start=130.531,skip-op_end=220.531,skip-ed_start=1326.58,skip-ed_end=1416.58 '--script=/home/synacktra/.config/ani-skip/skip.lua'
+  ```
+  > Use the stored or persisted MAL ID to expedite the process of fetching skip times.
+
 
 ## Install
 
 ```sh
 git clone https://github.com/synacktraa/ani-skip.git
 sudo cp ani-skip/ani-skip /usr/local/bin
-mkdir -p ~/.config/mpv/scripts && cp ani-skip/skip.lua ~/.config/mpv/scripts/
+mkdir -p "$HOME/.config/ani-skip" && cp ani-skip/skip.lua "$HOME/.config/ani-skip"
 rm -rf ani-skip
 ```
 
@@ -74,6 +112,7 @@ rm -rf ani-skip
 
 ## Checklist
 
-- [x] mpv
-- [ ] vlc
+- [x] MPV support
 - [x] MyAnimeList Id scraper
+- [ ] VLC support
+- [ ] Test it on Android termux
