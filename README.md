@@ -2,7 +2,6 @@
 <br>
 <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-darkorange.svg"></a>
 <img src="https://img.shields.io/badge/os-linux-darkorange">
-<img src="https://img.shields.io/badge/os-mac-darkorange">
 <img src="https://img.shields.io/badge/os-windows-darkorange">
 <br>
 </p>
@@ -23,7 +22,7 @@ A script to automatically skip anime opening and ending sequences, making it eas
 
 Should you run into problems, first ensure you're using the most recent version:
 
-- For Linux and Mac:
+- For Linux:
   ```bash
   sudo ani-skip -U
   ```
@@ -96,7 +95,19 @@ ani-skip -h
 
 ```sh
 git clone https://github.com/synacktraa/ani-skip.git
-sudo cp ani-skip/ani-skip /usr/local/bin
+```
+
+Copy ani-skip shell script
+- Linux
+  ```sh
+  sudo cp ani-skip/ani-skip /usr/local/bin
+  ```
+- Windows (Git Bash)
+  ```sh
+  cp ani-skip/ani-skip /usr/bin
+  ```
+  
+```sh
 mkdir -p "$HOME/.config/ani-skip" && cp ani-skip/skip.lua "$HOME/.config/ani-skip"
 rm -rf ani-skip
 ```
@@ -115,4 +126,4 @@ rm -rf ani-skip
 - [x] MPV support
 - [x] MyAnimeList Id scraper
 - [ ] VLC support
-- [ ] Test it on Android termux
+- [ ] Test it on Android termux and Mac
