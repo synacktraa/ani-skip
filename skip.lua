@@ -13,15 +13,15 @@ mpv_options.read_options(options, "skip") --reading script-opts data
 -- Main function to check and skip if within the defined section
 local function skip()
     local current_time = mp.get_property_number("time-pos")
-    
+
     if not enabled then  
         return
     end
-    
+
     if not current_time then
         return
     end
-    
+
     -- Check for opening sequence
     if current_time >= options.op_start and current_time < options.op_end then
         mp.set_property_number("time-pos", options.op_end)
