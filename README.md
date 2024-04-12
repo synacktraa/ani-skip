@@ -39,6 +39,10 @@ If the issue remains unresolved, please create a new issue.
 
 ## Usage
 
+- Press `i` in MPV to toggle the skipping of the OP/ED
+##
+
+
 ```sh
 ani-skip -h
 ```
