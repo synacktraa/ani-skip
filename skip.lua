@@ -14,7 +14,7 @@ mpv_options.read_options(options, "skip") --reading script-opts data
 local function skip()
     local current_time = mp.get_property_number("time-pos")
 
-    if not enabled then  
+    if not enabled then
         return
     end
 
