@@ -42,7 +42,7 @@ If the issue remains unresolved, please create a new issue.
 - Press **`i`** in MPV to toggle the skipping of the OP/ED
 > To configure this key, open `mpv/input.conf` and add the line `b script-binding skip_enable`,replace `b` with key of your choosing.\
  Note: Typing `B` in the config requires pressing **`shift`** + **`b`** in MPV. \
-(`i` will still work, unless the remaped in the input config.)
+(`i` will still work, unless remaped in the input config.)
 ##
 
 ```sh
