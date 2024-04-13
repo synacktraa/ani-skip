@@ -40,4 +40,4 @@ end
 
 -- Bind the function to be called whenever the time position is changed
 mp.observe_property("time-pos", "number", skip)
-mp.add_key_binding("i", "skipping", enabled_state)
+mp.add_key_binding(keybind, "skip_enable", enabled_state)
