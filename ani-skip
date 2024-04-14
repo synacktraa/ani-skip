@@ -1,10 +1,12 @@
 #!/bin/sh
 
 
-version_number="1.0.0"
+version_number="1.0.1"
 
-lua_script="$HOME/.config/ani-skip/skip.lua"
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
+
+chapter_format="\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=%s\nEND=%s\nTITLE=%s\n"
+option_format="skip-%s_start=%s,skip-%s_end=%s" 
 
 die() {
     printf "\33[2K\r\033[1;31m%s\033[0m\n" "$*" >&2
@@ -50,18 +52,6 @@ update_script() {
     exit 0
 }
 
-build_options() {
-    #shellcheck disable=SC2016
-    : '
-    `build_options` builds options for `--script-opts` flag from aniskip metadata
-    :param $1: skip type (for e.g.: op, ed, recap)
-    :param $2: AniSkip metadata
-    '
-    greppable='"start_time":([0-9.]+),"end_time":([0-9.]+)},"skip_type":"('$1')"'
-    unformatted=$(printf "%s" "$2" | grep -Eo "$greppable")
-    printf "%s" "$unformatted" | sed -E 's@'"$greppable"'@skip-\3_start=\1,skip-\3_end=\2@'
-}
-
 fetch_mal_id() {
     #shellcheck disable=SC2016
     : '
@@ -77,29 +67,67 @@ fetch_mal_id() {
     relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" --nth="$fzf_nth" | head -n1)
     [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | fzf -i --filter="$name" | head -n1)
     [ -z "$relevant_name" ] && relevant_name=$(printf "%s" "$results" | head -n1)
-    mal_id=$(printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p')
+    printf "%s" "$mal_metadata" | sed 's|},{|\n|g' | grep 'name":"'"$relevant_name"'","url":' | sed -nE 's|.*"id":([0-9]{1,9}),.*|\1|p'
+}
+
+ftoi() {
+    printf "%.3f" "$1" | tr -d '.'
+}
+
+build_options() {
+    #shellcheck disable=SC2016
+    : '
+    `build_options` builds options for `--script-opts` flag
+    :param $1: AniSkip metadata
+    '
+    st_time_re='"start_time":([0-9.]+)'
+    ed_time_re='"end_time":([0-9.]+)'
+    op_end=""
+    ed_start=""
+    options=""
+    
+    for skip_type in "op" "ed"
+    do
+        sk_type_re='"skip_type":"('$skip_type')"'
+        unformatted=$(printf "%s" "$1" | grep -Eo "$st_time_re,$ed_time_re},$sk_type_re")
+        if [ -n "$unformatted" ]; then
+            st_time=$(printf "%s" "$unformatted" | grep -Eo "$st_time_re" | sed -E 's@'"$st_time_re"'@\1@')
+            ed_time=$(printf "%s" "$unformatted" | grep -Eo "$ed_time_re" | sed -E 's@'"$ed_time_re"'@\1@')
+
+            [ "$skip_type" = "op" ] && op_end=$ed_time && ch_name="Opening"
+            [ "$skip_type" = "ed" ] && ed_start=$st_time && ch_name="Ending"
+            [ -n "$options" ] && options="$options,"
+
+            printf "$chapter_format" "$(ftoi $st_time)" "$(ftoi $ed_time)" "$ch_name" >> $chapters_file
+            options=$(printf "%s%s" "$options" $(printf "$option_format" "$skip_type" "$st_time" "$skip_type" "$ed_time"))
+
+        fi
+    done
+
+    if [ -n "$op_end" ]; then
+        [ -n "$ed_start" ] && ep_ed=$ed_start || ep_ed=$op_end
+        printf "$chapter_format" "$(ftoi $op_end)" "$(ftoi $ep_ed)" "Episode" >> $chapters_file
+    fi
+
+    printf "%s" "$options"
 }
 
 build_flags() {
     #shellcheck disable=SC2016
     : '
-    `build_flags` builds `--script-opts` and `--script` flags for MPV player
+    `build_flags` builds `--script-opts` and `--chapters-file` flags for MPV player
     :param $1: MyAnimeList Identifier
     :param $2: Episode number
     '
-    [ ! -f "$lua_script" ] && die "'skip.lua' script not found!"
-
     aniskip_api="https://api.aniskip.com/v1/skip-times/$1/$2?types=op&types=ed"
     metadata=$(curl -s --connect-timeout 5 -A "$agent" "$aniskip_api")
     
     found_status=$(printf "%s" "$metadata" | sed -n 's/.*"found":\([^,]*\).*/\1/p')
     [ "$found_status" != "true" ] && die "Skip times not found!"
 
-    op_options=$(build_options "op" "$metadata")
-    ed_options=$(build_options "ed" "$metadata")
-    [ -n "$op_options" ] && [ -n "$ed_options" ] && op_options="$op_options,"
-
-    skip_flag="--script-opts=$op_options$ed_options '--script=$lua_script'"
+    printf "%s" ";FFMETADATA1" > "$chapters_file"
+    options=$(build_options "$metadata")
+    [ -n "$options" ] && printf -- "--chapters-file=%s --script-opts=%s" "$chapters_file" "$options"
 }
 
 
@@ -113,7 +141,7 @@ while [ $# -gt 0 ]; do
         -q | --query)
             [ $# -lt 2 ] && die "missing anime title/MyAnimeList ID!"
             case $2 in
-                ''|*[!0-9]*) fetch_mal_id $2 ;;
+                ''|*[!0-9]*) mal_id=$(fetch_mal_id $2) ;;
                 *) mal_id=$2 ;;
             esac
             shift
@@ -132,5 +160,6 @@ done
 if [ -z "$episode" ]; then
     printf "%s" "$mal_id"
 else
-    build_flags $mal_id $episode && printf "%s" "$skip_flag"
+    chapters_file=$(mktemp)
+    build_flags $mal_id $episode
 fi

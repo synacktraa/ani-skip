@@ -68,7 +68,7 @@ ani-skip -h
   ani-skip --query "Black Clover (170 episodes)" --episode 10
   ```
   ```
-  --script-opts=skip-op_start=140.153,skip-op_end=230.153,skip-ed_start=1301.824,skip-ed_end=1431 '--script=/home/kali/.config/mpv/scripts/skip.lua'
+  --chapters-file=/tmp/tempfile --script-opts=skip-op_start=140.153,skip-op_end=230.153,skip-ed_start=1301.824,skip-ed_end=1431
   ```
   > `script-opts` with the `script` flag is produced by ani-skip when metadata for a specific anime's skip times exists in the database. It's important to append these flags at the end due to certain mpv nuances.
 
@@ -86,39 +86,40 @@ ani-skip -h
   ani-skip -q 52299 -e 2
   ```
   ```
-  --script-opts=skip-op_start=130.531,skip-op_end=220.531,skip-ed_start=1326.58,skip-ed_end=1416.58 '--script=/home/synacktra/.config/ani-skip/skip.lua'
+  --chapters-file=/tmp/tempfile --script-opts=skip-op_start=130.531,skip-op_end=220.531,skip-ed_start=1326.58,skip-ed_end=1416.58
   ```
   > Use the stored or persisted MAL ID to expedite the process of fetching skip times.
 
 
 ## Install
 
-```sh
-git clone https://github.com/synacktraa/ani-skip.git
-```
-
-Copy ani-skip shell script
 - Linux
   ```sh
+  git clone https://github.com/synacktraa/ani-skip.git
+  sudo apt install mpv fzf  
   sudo cp ani-skip/ani-skip /usr/local/bin
-  ```
-- Windows (Git Bash)
-  ```sh
-  cp ani-skip/ani-skip /usr/bin
+  mkdir -p ~/.config/mpv/scripts && cp ani-skip/skip.lua ~/.config/mpv/scripts
   ```
   
-```sh
-mkdir -p "$HOME/.config/ani-skip" && cp ani-skip/skip.lua "$HOME/.config/ani-skip"
-rm -rf ani-skip
-```
+- Windows
+  > Make sure [scoop](https://scoop.sh/) is installed.
+  - Open powershell and run:
+    ```powershell
+    scoop install mpv fzf git
+    ```
+  - Open git bash
+    ```sh
+    git clone https://github.com/synacktraa/ani-skip.git
+    cp ani-skip/ani-skip /usr/bin
+    mkdir -p ~/scoop/apps/mpv/current/portable_config/scripts
+    cp ani-skip/skip.lua ~/scoop/apps/mpv/current/portable_config/scripts
+    ```
 
 ## Dependencies
-
 - grep
 - sed
 - curl
 - fzf
-- lua
 - mpv - Video Player
 
 ## Checklist
@@ -126,4 +127,5 @@ rm -rf ani-skip
 - [x] MPV support
 - [x] MyAnimeList Id scraper
 - [ ] VLC support
+- [ ] Create packages for Windows, Linux and Termux
 - [ ] Test it on Android termux and Mac
