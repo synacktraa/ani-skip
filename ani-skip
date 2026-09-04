@@ -1,6 +1,7 @@
 #!/bin/sh
+export LC_ALL=C
 
-version_number="1.2.1"
+version_number="1.2.2"
 
 repo="https://raw.githubusercontent.com/synacktraa/ani-skip/master"
 agent="Mozilla/5.0 (Windows NT 6.1; Win64; rv:109.0) Gecko/20100101 Firefox/109.0"
@@ -165,8 +166,10 @@ build_options() {
     '
     st_time_re='"start_time":([0-9.]+)'
     ed_time_re='"end_time":([0-9.]+)'
+    op_start=""
     op_end=""
     ed_start=""
+    ed_end=""
     options=""
     
     for skip_type in "op" "ed"
@@ -177,19 +180,51 @@ build_options() {
             st_time=$(printf "%s" "$unformatted" | grep -Eo "$st_time_re" | sed -E 's@'"$st_time_re"'@\1@')
             ed_time=$(printf "%s" "$unformatted" | grep -Eo "$ed_time_re" | sed -E 's@'"$ed_time_re"'@\1@')
 
-            [ "$skip_type" = "op" ] && op_end=$ed_time && ch_name="Opening"
-            [ "$skip_type" = "ed" ] && ed_start=$st_time && ch_name="Ending"
-            [ -n "$options" ] && options="$options,"
-
-            printf "$chapter_format" "$(ftoi $st_time)" "$(ftoi $ed_time)" "$ch_name" >> $chapters_file
-            options=$(printf "%s%s" "$options" $(printf "$option_format" "$skip_type" "$st_time" "$skip_type" "$ed_time"))
-
+            [ "$skip_type" = "op" ] && op_start=$st_time && op_end=$ed_time
+            [ "$skip_type" = "ed" ] && ed_start=$st_time && ed_end=$ed_time
         fi
     done
 
-    if [ -n "$op_end" ]; then
-        [ -n "$ed_start" ] && ep_ed=$ed_start || ep_ed=$op_end
-        printf "$chapter_format" "$(ftoi $op_end)" "$(ftoi $ep_ed)" "Episode" >> $chapters_file
+    op_st_ms=""
+    op_ed_ms=""
+    if [ -n "$op_start" ] && [ -n "$op_end" ]; then
+        op_st_ms=$(ftoi "$op_start")
+        op_ed_ms=$(ftoi "$op_end")
+        if [ "$op_st_ms" -lt "$op_ed_ms" ]; then
+            printf "$chapter_format" "$op_st_ms" "$op_ed_ms" "Opening" >> "$chapters_file"
+            options=$(printf "$option_format" "op" "$op_start" "op" "$op_end")
+        else
+            op_start=""
+            op_end=""
+            op_st_ms=""
+            op_ed_ms=""
+        fi
+    fi
+
+    ed_st_ms=""
+    ed_ed_ms=""
+    if [ -n "$ed_start" ] && [ -n "$ed_end" ]; then
+        ed_st_ms=$(ftoi "$ed_start")
+        ed_ed_ms=$(ftoi "$ed_end")
+        # Ensure Ending segment is internally valid and chronologically follows Opening
+        if [ "$ed_st_ms" -lt "$ed_ed_ms" ] && { [ -z "$op_ed_ms" ] || [ "$ed_st_ms" -ge "$op_ed_ms" ]; }; then
+            if [ -n "$op_ed_ms" ] && [ "$op_ed_ms" -lt "$ed_st_ms" ]; then
+                printf "$chapter_format" "$op_ed_ms" "$ed_st_ms" "Episode" >> "$chapters_file"
+            fi
+            printf "$chapter_format" "$ed_st_ms" "$ed_ed_ms" "Ending" >> "$chapters_file"
+            [ -n "$options" ] && options="$options,"
+            options="$options$(printf "$option_format" "ed" "$ed_start" "ed" "$ed_end")"
+        else
+            ed_start=""
+            ed_end=""
+            ed_st_ms=""
+            ed_ed_ms=""
+            if [ -n "$op_ed_ms" ]; then
+                printf "$chapter_format" "$op_ed_ms" "$op_ed_ms" "Episode" >> "$chapters_file"
+            fi
+        fi
+    elif [ -n "$op_ed_ms" ]; then
+        printf "$chapter_format" "$op_ed_ms" "$op_ed_ms" "Episode" >> "$chapters_file"
     fi
 
     printf "%s" "$options"
